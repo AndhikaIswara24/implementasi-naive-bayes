@@ -11,6 +11,17 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, confusion_matrix, classification_report)
 import warnings
 warnings.filterwarnings("ignore")
+import json
+
+# open file ipynb
+with open("naive-bayes.ipynb", "r", encoding="utf-8") as f:
+    notebook = json.load(f)
+
+for cell in notebook["cells"]:
+    if cell["cell_type"] == "markdown":
+        st.markdown("".join(cell["source"]))
+    elif cell["cell_type"] == "code":
+        st.code("".join(cell["source"]))
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG
@@ -80,7 +91,7 @@ st.markdown("""
     #MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-
+    
 # ─────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────
@@ -124,10 +135,10 @@ def load_and_train(uploaded):
         elif "KODE" in c:      rename[c] = "KODE_BARANG"
         elif "KATEGORI" in c:  rename[c] = "KATEGORI_BARANG"
         elif "TAHUN" in c:     rename[c] = "TAHUN_PENGADAAN"
-        elif "FREK" in c:      rename[c] = "FREKUENSI_PEMAKAIAN"
+        elif "FREKUENSI" in c: rename[c] = "FREKUENSI_PEMAKAIAN"
         elif "UMUR" in c:      rename[c] = "UMUR_BARANG"
-        elif "FISIK" in c or "KONDISI_F" in c: rename[c] = "KONDISI_FISIK"
-        elif "LENGKAP" in c:   rename[c] = "KELENGKAPAN"
+        elif "KONDISI_FISIK" in c: rename[c] = "KONDISI_FISIK"
+        elif "KELENGKAPAN" in c: rename[c] = "KELENGKAPAN"
         elif "LABEL" in c:     rename[c] = "LABEL_KONDISI"
     df_raw.rename(columns=rename, inplace=True)
 
@@ -163,7 +174,11 @@ def load_and_train(uploaded):
 with st.sidebar:
     st.markdown("## 📦 Inventaris NB")
     st.markdown("---")
-    uploaded = st.file_uploader("Upload file CSV inventaris", type=["csv"])
+    
+    # File uploader
+    uploaded = st.file_uploader("📤 Upload CSV Inventaris", type=["csv"], 
+                               help="Upload file CSV dengan kolom: NAMA_BARANG, MERK, KODE_BARANG, KATEGORI_BARANG, TAHUN_PENGADAAN, FREKUENSI_PEMAKAIAN, UMUR_BARANG, KONDISI_FISIK, KELENGKAPAN, LABEL_KONDISI")
+    
     st.markdown("---")
     st.markdown("### 🔍 Navigasi")
     menu = st.radio("Pilih halaman:", [
