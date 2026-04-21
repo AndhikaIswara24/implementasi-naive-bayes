@@ -28,94 +28,56 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Main app - FONT HITAM */
-    .stApp { 
-        background-color: #F0F4F8; 
-        color: #000000 !important; 
-        font-family: 'Segoe UI', sans-serif;
-    }
-    
-    /* Header & Title - HITAM */
-    h1, h2, h3, h4, h5, h6 {
-        color: #1F4E79 !important;
-    }
-    
-    /* Text - SEMUA HITAM */
-    .stMarkdown, p, div, span, label {
-        color: #000000 !important;
-    }
-    
-    /* Dataframe - HITAM */
-    .dataframe tbody tr td {
-        color: #000000 !important;
-    }
-    
-    /* Sidebar - WHITE tetap */
-    section[data-testid="stSidebar"] { 
-        background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%); 
-    }
-    section[data-testid="stSidebar"] * { 
-        color: white !important; 
-    }
-    
-    /* Metric cards - HITAM TEXT */
-    .metric-card { 
-        background: white; 
-        border-radius: 12px; 
-        padding: 20px 24px; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-        border-left: 5px solid #2E75B6; 
-        margin-bottom: 12px;
-        color: #000000 !important;
-    }
-    .metric-card.green  { border-left-color: #70AD47; }
-    .metric-card.yellow { border-left-color: #FFC000; }
-    .metric-card.red    { border-left-color: #FF0000; }
-    .metric-card.blue   { border-left-color: #2E75B6; }
-    .metric-val  { 
-        font-size: 2.2rem; 
-        font-weight: 700; 
-        color: #1F4E79 !important; 
-    }
-    .metric-label { 
-        font-size: 0.95rem; 
-        color: #333333 !important; 
-        margin-top: 4px; 
-    }
-    
-    /* Section header */
-    .section-header { 
-        background: linear-gradient(90deg, #1F4E79, #2E75B6); 
-        color: white !important; 
-        padding: 12px 20px; 
-        border-radius: 8px; 
-        font-size: 1.1rem; 
-        font-weight: 600; 
-        margin: 25px 0 15px 0;
-    }
-    
-    /* Badges */
-    .badge-layak    { background:#70AD47 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
-    .badge-kurang   { background:#FFC000 !important; color:#000000 !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
-    .badge-tidak    { background:#FF0000 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
-    
-    /* Streamlit elements - HITAM */
-    [data-testid="stMetricLabel"] { color: #333333 !important; }
-    [data-testid="stMetricValue"] { color: #1F4E79 !important; }
-    
-    /* Tables & Dataframes */
-    .stDataFrame table { color: #000000 !important; }
-    
-    /* Inputs */
-    .stSelectbox > label, .stSlider > label, .stTextInput > label {
-        color: #000000 !important;
-    }
-    
-    hr { border: 1px solid #D0D7DE; margin: 20px 0; }
-    #MainMenu, footer { visibility: hidden; }
+/* ===== GLOBAL TEXT FIX ===== */
+html, body, [class*="css"]  {
+    color: #000000 !important;
+}
+
+/* Main App */
+.stApp {
+    background-color: #F0F4F8;
+    color: #000000 !important;
+}
+
+/* Semua teks utama */
+h1, h2, h3, h4, h5, h6,
+p, span, div, label,
+strong, small {
+    color: #000000 !important;
+    opacity: 1 !important;
+}
+
+/* Judul Streamlit */
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3 {
+    color: #000000 !important;
+}
+
+/* Markdown */
+.stMarkdown {
+    color: #000000 !important;
+}
+
+/* Sidebar tetap putih */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%);
+}
+section[data-testid="stSidebar"] * {
+    color: white !important;
+}
+
+/* Hilangkan transparan */
+* {
+    opacity: 1 !important;
+}
+
+/* Hide menu */
+#MainMenu, footer {
+    visibility: hidden;
+}
 </style>
 """, unsafe_allow_html=True)
-
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -162,63 +124,91 @@ def load_data():
 
 @st.cache_data
 def preprocess_and_train(df_raw):
-    """Robust preprocessing dengan debug"""
-    print("DEBUG: Columns:", df_raw.columns.tolist())
-    
     # Normalize columns
+    df_raw = df_raw.copy()
     df_raw.columns = [str(c).strip().upper().replace(" ", "_") for c in df_raw.columns]
-    
-    # Comprehensive column mapping
+
+    # ── Comprehensive column mapping ──────────────────────────
     rename_map = {}
     for c in df_raw.columns:
-        if any(x in c for x in ["NAMA", "NAMA BARANG"]): rename_map[c] = "NAMA_BARANG"
-        elif "MERK" in c: rename_map[c] = "MERK"
-        elif "KODE" in c: rename_map[c] = "KODE_BARANG"
-        elif "KATEGORI" in c: rename_map[c] = "KATEGORI_BARANG"
-        elif "TAHUN" in c: rename_map[c] = "TAHUN_PENGADAAN"
-        elif "FREKUENSI" in c: rename_map[c] = "FREKUENSI_PEMAKAIAN"
-        elif "UMUR" in c: rename_map[c] = "UMUR_BARANG"
-        elif "KONDISI_FISIK" in c: rename_map[c] = "KONDISI_FISIK"
-        elif "KELENGKAPAN" in c: rename_map[c] = "KELENGKAPAN"
-        elif "LABEL" in c: rename_map[c] = "Label Kondisi"
-    
+        cu = c.upper()
+        if   "NAMA"        in cu and "BARANG" in cu: rename_map[c] = "NAMA_BARANG"
+        elif "MERK"        in cu:                    rename_map[c] = "MERK"
+        elif "KODE"        in cu:                    rename_map[c] = "KODE_BARANG"
+        elif "KATEGORI"    in cu:                    rename_map[c] = "KATEGORI_BARANG"
+        elif "TAHUN"       in cu:                    rename_map[c] = "TAHUN_PENGADAAN"
+        elif "FREKUENSI"   in cu:                    rename_map[c] = "FREKUENSI_PEMAKAIAN"
+        elif "UMUR"        in cu:                    rename_map[c] = "UMUR_BARANG"
+        elif "FISIK"       in cu:                    rename_map[c] = "KONDISI_FISIK"   # ← khusus fisik dulu
+        elif "KELENGKAPAN" in cu:                    rename_map[c] = "KELENGKAPAN"
+        # FIX: tangkap lebih banyak variasi nama kolom label
+        elif any(x in cu for x in ["LABEL", "STATUS", "KETERANGAN", "KLASIFIKASI"]):
+            rename_map[c] = "Label Kondisi"
+
     df_raw.rename(columns=rename_map, inplace=True)
-    
+
+    # ── FIX: Auto-detect kolom label dari ISI DATA ─────────────
+    if "Label Kondisi" not in df_raw.columns:
+        KNOWN_LABELS = {"LAYAK", "KURANG LAYAK", "TIDAK LAYAK",
+                        "KURANG_LAYAK", "TIDAK_LAYAK"}
+        for col in df_raw.columns:
+            # Lewati kolom yang sudah di-assign
+            if col in (list(rename_map.values()) + ["NAMA_BARANG", "MERK",
+               "KODE_BARANG", "KATEGORI_BARANG", "TAHUN_PENGADAAN",
+               "FREKUENSI_PEMAKAIAN", "UMUR_BARANG", "KONDISI_FISIK", "KELENGKAPAN"]):
+                continue
+            unique_vals = set(
+                df_raw[col].dropna().astype(str)
+                .str.strip().str.upper().unique()
+            )
+            if unique_vals & KNOWN_LABELS:          # ada irisan → ini kolom label
+                df_raw.rename(columns={col: "Label Kondisi"}, inplace=True)
+                st.sidebar.info(f"🔍 Label kolom: **{col}** → 'Label Kondisi'")
+                break
+
+    # ── Gagal total → tampilkan kolom tersedia untuk debug ────
     if "Label Kondisi" not in df_raw.columns:
         st.error("❌ Kolom 'Label Kondisi' tidak ditemukan!")
-        st.write("Columns:", df_raw.columns.tolist())
+        st.warning("📋 Kolom yang tersedia di CSV:")
+        st.code("\n".join(df_raw.columns.tolist()))
+        st.info("💡 Pastikan salah satu kolom berisi nilai: LAYAK / KURANG LAYAK / TIDAK LAYAK")
         st.stop()
-    
+
     df = df_raw.copy()
-    
+
     # Numeric features
     available_features = [col for col in FITUR_COLS if col in df.columns]
     for col in available_features:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-    
+
     # Training data
     df_train = df[df["Label Kondisi"].notna()].copy()
-    df_train["Label Kondisi"] = df_train["Label Kondisi"].astype(str).str.strip().str.upper()
-    
+    df_train["Label Kondisi"] = (
+        df_train["Label Kondisi"].astype(str).str.strip().str.upper()
+    )
+
     le = LabelEncoder()
     df_train["LABEL_ENC"] = le.fit_transform(df_train["Label Kondisi"])
-    
+
     X = df_train[available_features]
     y = df_train["LABEL_ENC"]
-    
+
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y if len(y.unique()) > 1 else None
+        X, y, test_size=0.2, random_state=42,
+        stratify=y if len(y.unique()) > 1 else None
     )
-    
+
     gnb = GaussianNB()
     bnb = BernoulliNB()
     gnb.fit(X_train, y_train)
     bnb.fit(X_train, y_train)
-    
+
     y_pred_gnb = gnb.predict(X_test)
     y_pred_bnb = bnb.predict(X_test)
-    
-    return (df, df_train, le, gnb, bnb, X_train, X_test, y_train, y_test, y_pred_gnb, y_pred_bnb, available_features)
+
+    return (df, df_train, le, gnb, bnb,
+            X_train, X_test, y_train, y_test,
+            y_pred_gnb, y_pred_bnb, available_features)
 
 # ─────────────────────────────────────────────────────────────
 # MAIN APP
