@@ -12,22 +12,13 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 import warnings
 warnings.filterwarnings("ignore")
 import json
-
-# open file ipynb
-with open("naive-bayes.ipynb", "r", encoding="utf-8") as f:
-    notebook = json.load(f)
-
-for cell in notebook["cells"]:
-    if cell["cell_type"] == "markdown":
-        st.markdown("".join(cell["source"]))
-    elif cell["cell_type"] == "code":
-        st.code("".join(cell["source"]))
+import os
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Inventaris Naive Bayes",
+    page_title="Inventaris Naive Bayes - SMK Muhammadiyah 12",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -91,7 +82,7 @@ st.markdown("""
     #MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-    
+
 # ─────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────
@@ -121,9 +112,24 @@ def section(title):
     st.markdown(f'<div class="section-header">📌 {title}</div>', unsafe_allow_html=True)
 
 @st.cache_data
-def load_and_train(uploaded):
-    df_raw = pd.read_csv(uploaded)
+def load_csv_data():
+    """Load data dari file CSV yang sudah ada"""
+    try:
+        # Ganti path sesuai lokasi file CSV Anda
+        csv_path = "Data Inventaris SMK Muhammadiyah 12 - Tahun 2025.csv"
+        if os.path.exists(csv_path):
+            df_raw = pd.read_csv(csv_path)
+            return df_raw
+        else:
+            st.error(f"File CSV tidak ditemukan: {csv_path}")
+            return None
+    except Exception as e:
+        st.error(f"Error loading CSV: {e}")
+        return None
 
+@st.cache_data
+def load_and_train(df_raw):
+    """Proses training model dari data CSV"""
     # ── Normalise column names ──────────────────────────────
     df_raw.columns = [c.strip().upper().replace(" ","_") for c in df_raw.columns]
 
@@ -168,22 +174,37 @@ def load_and_train(uploaded):
 
     return df, df_train, le, gnb, bnb, X_train, X_test, y_train, y_test, y_pred_gnb, y_pred_bnb
 
+@st.cache_data
+def load_notebook():
+    """Load dan tampilkan isi notebook"""
+    try:
+        if os.path.exists("naive-bayes.ipynb"):
+            with open("naive-bayes.ipynb", "r", encoding="utf-8") as f:
+                notebook = json.load(f)
+            return notebook
+        return None
+    except:
+        return None
+
 # ─────────────────────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📦 Inventaris NB")
+    st.markdown("### SMK Muhammadiyah 12")
+    st.markdown("**Tahun 2025**")
     st.markdown("---")
     
-    # File uploader
-    uploaded = st.file_uploader("📤 Upload CSV Inventaris", type=["csv"], 
-                               help="Upload file CSV dengan kolom: NAMA_BARANG, MERK, KODE_BARANG, KATEGORI_BARANG, TAHUN_PENGADAAN, FREKUENSI_PEMAKAIAN, UMUR_BARANG, KONDISI_FISIK, KELENGKAPAN, LABEL_KONDISI")
+    st.success("✅ Data otomatis dimuat!")
+    st.info("📊 naive-bayes.ipynb")
+    st.info("📋 Data Inventaris CSV")
     
     st.markdown("---")
     st.markdown("### 🔍 Navigasi")
     menu = st.radio("Pilih halaman:", [
         "🏠 Dashboard",
         "📋 Data Inventaris",
+        "📓 Notebook Jupyter",
         "🤖 Model & Evaluasi",
         "📊 Confusion Matrix",
         "🔮 Prediksi Manual",
@@ -202,50 +223,58 @@ with st.sidebar:
     """)
 
 # ─────────────────────────────────────────────────────────────
-# MAIN
+# MAIN - Load Data Otomatis
 # ─────────────────────────────────────────────────────────────
-if uploaded is None:
+@st.cache_data
+def initialize_app():
+    """Inisialisasi aplikasi dengan load data otomatis"""
+    # Load notebook
+    notebook = load_notebook()
+    
+    # Load CSV
+    df_raw = load_csv_data()
+    
+    if df_raw is None or notebook is None:
+        return None, None, None
+    
+    # Train model
+    result = load_and_train(df_raw)
+    return notebook, df_raw, result
+
+notebook, df_raw, model_result = initialize_app()
+
+if model_result is None:
     st.markdown("""
     <div style='text-align:center; padding: 80px 20px;'>
         <h1 style='color:#1F4E79;'>📦 Sistem Klasifikasi Inventaris</h1>
-        <h3 style='color:#2E75B6;'>Metode Naive Bayes</h3>
+        <h3 style='color:#2E75B6;'>SMK Muhammadiyah 12 - Tahun 2025</h3>
         <p style='color:#666; font-size:1.1rem;'>
-            Implementasi algoritma Naive Bayes untuk memprediksi<br>
-            kelayakan barang inventaris berdasarkan kondisi fisik dan pemakaian.
+            Pastikan file berikut ada di folder yang sama:<br>
+            - <code>naive-bayes.ipynb</code><br>
+            - <code>Data Inventaris SMK Muhammadiyah 12 - Tahun 2025.csv</code>
         </p>
-        <br>
-        <div style='background:white; border-radius:12px; padding:30px; 
-                    box-shadow:0 4px 16px rgba(0,0,0,0.1); max-width:500px; margin:auto;'>
-            <h4 style='color:#1F4E79;'>⬅️ Upload CSV di sidebar untuk memulai</h4>
-            <p style='color:#888; font-size:0.9rem;'>
-                Pastikan CSV memiliki kolom:<br>
-                <code>NAMA_BARANG, MERK, KODE_BARANG, KATEGORI_BARANG,<br>
-                TAHUN_PENGADAAN, FREKUENSI_PEMAKAIAN, UMUR_BARANG,<br>
-                KONDISI_FISIK, KELENGKAPAN, LABEL_KONDISI</code>
-            </p>
-        </div>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# ── Load & Train ────────────────────────────────────────────
-try:
-    (df, df_train, le, gnb, bnb,
-     X_train, X_test, y_train, y_test,
-     y_pred_gnb, y_pred_bnb) = load_and_train(uploaded)
-except Exception as e:
-    st.error(f"❌ Gagal memproses CSV: {e}")
-    st.stop()
+# Unpack model results
+(df, df_train, le, gnb, bnb,
+ X_train, X_test, y_train, y_test,
+ y_pred_gnb, y_pred_bnb) = model_result
 
 label_counts = df_train[LABEL_COL].value_counts()
-best_model   = gnb  # default
+best_model   = gnb
+
+# ─────────────────────────────────────────────────────────────
+# PAGES
+# ─────────────────────────────────────────────────────────────
 
 # ═══════════════════════════════════════════════════════════
 # PAGE: DASHBOARD
 # ═══════════════════════════════════════════════════════════
 if menu == "🏠 Dashboard":
-    st.markdown("<h2 style='color:#1F4E79;'>🏠 Dashboard Inventaris</h2>", unsafe_allow_html=True)
-    st.markdown("Ringkasan kondisi barang inventaris menggunakan klasifikasi **Naive Bayes**.")
+    st.markdown("<h1 style='color:#1F4E79;'>🏠 Dashboard Inventaris SMK Muhammadiyah 12</h1>", unsafe_allow_html=True)
+    st.markdown("**Tahun 2025** - Analisis kondisi barang inventaris menggunakan Naive Bayes.")
     st.markdown("---")
 
     # ── Metric cards ───────────────────────────────────────
@@ -295,45 +324,30 @@ if menu == "🏠 Dashboard":
 
     st.markdown("---")
 
-    section("Distribusi Barang per Kategori")
-    if "KATEGORI_BARANG" in df_train.columns:
-        cat_data = df_train.groupby(["KATEGORI_BARANG", LABEL_COL]).size().unstack(fill_value=0)
-        fig3, ax3 = plt.subplots(figsize=(10, 4))
-        cat_data.plot(kind='bar', ax=ax3, color=[COLOR_MAP.get(c,"#999") for c in cat_data.columns],
-                      edgecolor='white', linewidth=1)
-        ax3.set_title("Jumlah Barang per Kategori & Kondisi", fontweight='bold')
-        ax3.set_xlabel(""); ax3.set_ylabel("Jumlah")
-        ax3.legend(title="Kondisi", bbox_to_anchor=(1.01,1))
-        ax3.tick_params(axis='x', rotation=30)
-        ax3.set_facecolor("#F8F9FA"); fig3.patch.set_facecolor("white")
-        ax3.spines[['top','right']].set_visible(False)
-        plt.tight_layout()
-        st.pyplot(fig3, use_container_width=True)
-
-    section("Akurasi Model (ringkasan)")
+    section("Akurasi Model")
     m1, m2 = st.columns(2)
     acc_g = accuracy_score(y_test, y_pred_gnb) * 100
     acc_b = accuracy_score(y_test, y_pred_bnb) * 100
     with m1:
-        st.markdown(metric_card(f"{acc_g:.2f}%", "Akurasi Gaussian Naive Bayes", "blue"), unsafe_allow_html=True)
+        st.markdown(metric_card(f"{acc_g:.2f}%", "Gaussian NB", "blue"), unsafe_allow_html=True)
     with m2:
-        st.markdown(metric_card(f"{acc_b:.2f}%", "Akurasi Bernoulli Naive Bayes", "blue"), unsafe_allow_html=True)
-
+        st.markdown(metric_card(f"{acc_b:.2f}%", "Bernoulli NB", "blue"), unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════
 # PAGE: DATA INVENTARIS
 # ═══════════════════════════════════════════════════════════
 elif menu == "📋 Data Inventaris":
-    st.markdown("<h2 style='color:#1F4E79;'>📋 Data Inventaris</h2>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#1F4E79;'>📋 Data Inventaris Lengkap</h1>", unsafe_allow_html=True)
+    st.markdown(f"**SMK Muhammadiyah 12 - Tahun 2025** | Total: {len(df)} data")
     st.markdown("---")
 
     # Filter
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
-        filter_label = st.selectbox("Filter Label:", ["Semua"] + df_train[LABEL_COL].unique().tolist())
+        filter_label = st.selectbox("Filter Label:", ["Semua"] + sorted(df_train[LABEL_COL].unique().tolist()))
     with col_f2:
-        filter_kat   = st.selectbox("Filter Kategori:", ["Semua"] + (
-            df_train["KATEGORI_BARANG"].unique().tolist() if "KATEGORI_BARANG" in df_train.columns else []))
+        filter_kat = st.selectbox("Filter Kategori:", ["Semua"] + (sorted(
+            df_train["KATEGORI_BARANG"].unique().tolist()) if "KATEGORI_BARANG" in df_train.columns else []))
     with col_f3:
         search = st.text_input("🔍 Cari nama barang:", "")
 
@@ -345,7 +359,7 @@ elif menu == "📋 Data Inventaris":
     if search:
         df_view = df_view[df_view["NAMA_BARANG"].str.contains(search, case=False, na=False)]
 
-    st.markdown(f"**Menampilkan {len(df_view)} dari {len(df_train)} data latih**")
+    st.markdown(f"**Menampilkan {len(df_view)} dari {len(df_train)} data**")
 
     show_cols = [c for c in INFO_COLS + FITUR_COLS + [LABEL_COL] if c in df_view.columns]
 
@@ -357,211 +371,19 @@ elif menu == "📋 Data Inventaris":
 
     styled = df_view[show_cols].reset_index(drop=True).style.applymap(
         color_label, subset=[LABEL_COL])
-    st.dataframe(styled, use_container_width=True, height=480)
+    st.dataframe(styled, use_container_width=True, height=600)
 
-    section("Statistik Deskriptif Fitur Numerik")
-    st.dataframe(df_train[FITUR_COLS].describe().round(2), use_container_width=True)
-
-
-# ═══════════════════════════════════════════════════════════
-# PAGE: MODEL & EVALUASI
-# ═══════════════════════════════════════════════════════════
-elif menu == "🤖 Model & Evaluasi":
-    st.markdown("<h2 style='color:#1F4E79;'>🤖 Evaluasi Model Naive Bayes</h2>", unsafe_allow_html=True)
-    st.markdown("---")
-
-    section("Pembagian Data (sesuai jurnal)")
-    d1, d2, d3 = st.columns(3)
-    with d1: st.markdown(metric_card(len(X_train), "Data Training (80%)", "blue"), unsafe_allow_html=True)
-    with d2: st.markdown(metric_card(len(X_test),  "Data Testing (20%)",  "blue"), unsafe_allow_html=True)
-    with d3: st.markdown(metric_card(len(X_train)+len(X_test), "Total Data Latih", "blue"), unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    tab1, tab2 = st.tabs(["📐 Gaussian Naive Bayes", "📐 Bernoulli Naive Bayes"])
-
-    for tab, y_pred, nama in zip([tab1, tab2], [y_pred_gnb, y_pred_bnb], ["Gaussian NB", "Bernoulli NB"]):
-        with tab:
-            acc = accuracy_score(y_test, y_pred)
-            prec = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-            rec  = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-            f1   = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-
-            m1,m2,m3,m4 = st.columns(4)
-            with m1: st.markdown(metric_card(f"{acc*100:.2f}%",  "Accuracy",  "blue"),  unsafe_allow_html=True)
-            with m2: st.markdown(metric_card(f"{prec:.2f}",      "Precision", "green"), unsafe_allow_html=True)
-            with m3: st.markdown(metric_card(f"{rec:.2f}",       "Recall",    "yellow"),unsafe_allow_html=True)
-            with m4: st.markdown(metric_card(f"{f1:.2f}",        "F1-Score",  "blue"),  unsafe_allow_html=True)
-
-            st.markdown("---")
-            section(f"Classification Report — {nama}")
-            report = classification_report(y_test, y_pred,
-                                            target_names=le.classes_, output_dict=True)
-            df_rep = pd.DataFrame(report).transpose().round(3)
-            st.dataframe(df_rep.style.background_gradient(cmap="Blues", subset=["precision","recall","f1-score"]),
-                         use_container_width=True)
-
-            section("Rumus Naive Bayes (Teorema Bayes)")
-            st.latex(r"P(H \mid X) = \frac{P(X \mid H) \cdot P(H)}{P(X)}")
-            st.markdown("""
-            | Simbol | Keterangan |
-            |--------|-----------|
-            | **X** | Data barang yang belum diketahui kelasnya |
-            | **H** | Hipotesis (kelas: LAYAK / KURANG LAYAK / TIDAK LAYAK) |
-            | **P(H\|X)** | Probabilitas kelas setelah melihat data X (posterior) |
-            | **P(X\|H)** | Likelihood — probabilitas fitur X jika kelas H benar |
-            | **P(H)** | Prior — probabilitas awal kelas H |
-            | **P(X)** | Probabilitas total data X |
-            """)
-
-
-# ═══════════════════════════════════════════════════════════
-# PAGE: CONFUSION MATRIX
-# ═══════════════════════════════════════════════════════════
-elif menu == "📊 Confusion Matrix":
-    st.markdown("<h2 style='color:#1F4E79;'>📊 Confusion Matrix</h2>", unsafe_allow_html=True)
-    st.markdown("Visualisasi performa prediksi model — sesuai metodologi jurnal Iskandar Madani (2025).")
-    st.markdown("---")
-
-    model_choice = st.selectbox("Pilih model:", ["Gaussian Naive Bayes", "Bernoulli Naive Bayes"])
-    y_pred = y_pred_gnb if "Gaussian" in model_choice else y_pred_bnb
-
-    cm = confusion_matrix(y_test, y_pred)
-
-    col1, col2 = st.columns([1.3, 1])
+    section("Statistik Deskriptif")
+    col1, col2 = st.columns(2)
     with col1:
-        fig, ax = plt.subplots(figsize=(7, 5))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
-                    xticklabels=le.classes_, yticklabels=le.classes_,
-                    linewidths=0.5, linecolor='white',
-                    annot_kws={"size":14, "weight":"bold"})
-        ax.set_title(f"Confusion Matrix — {model_choice}", fontweight='bold', fontsize=13, pad=15)
-        ax.set_xlabel("Predicted Label", fontsize=11)
-        ax.set_ylabel("True Label", fontsize=11)
-        plt.xticks(rotation=30, ha='right'); plt.yticks(rotation=0)
-        fig.patch.set_facecolor("white")
-        plt.tight_layout()
-        st.pyplot(fig, use_container_width=True)
-
+        st.dataframe(df_train[FITUR_COLS].describe().round(2), use_container_width=True)
     with col2:
-        section("Keterangan Confusion Matrix")
-        st.markdown("""
-        | Istilah | Arti |
-        |---------|------|
-        | **TP** (True Positive) | Prediksi benar pada kelas positif |
-        | **TN** (True Negative) | Prediksi benar pada kelas negatif |
-        | **FP** (False Positive) | Salah diprediksi sebagai positif |
-        | **FN** (False Negative) | Salah diprediksi sebagai negatif |
-        """)
-        st.markdown("---")
-        st.latex(r"\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}")
-        st.latex(r"\text{Precision} = \frac{TP}{TP + FP}")
-        st.latex(r"\text{Recall} = \frac{TP}{TP + FN}")
-        st.markdown("---")
-        acc  = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred, average='macro', zero_division=0)
-        rec  = recall_score(y_test, y_pred, average='macro', zero_division=0)
-        st.success(f"**Accuracy : {acc*100:.2f}%**")
-        st.info(f"**Precision: {prec:.4f}**")
-        st.warning(f"**Recall   : {rec:.4f}**")
-
-    section("Perbandingan Kedua Model")
-    rows = []
-    for nm, yp in [("Gaussian NB", y_pred_gnb), ("Bernoulli NB", y_pred_bnb)]:
-        rows.append({
-            "Model"    : nm,
-            "Accuracy" : f"{accuracy_score(y_test, yp)*100:.2f}%",
-            "Precision": f"{precision_score(y_test, yp, average='weighted', zero_division=0):.4f}",
-            "Recall"   : f"{recall_score(y_test, yp, average='weighted', zero_division=0):.4f}",
-            "F1-Score" : f"{f1_score(y_test, yp, average='weighted', zero_division=0):.4f}",
-        })
-    st.dataframe(pd.DataFrame(rows).set_index("Model"), use_container_width=True)
-
+        st.dataframe(df_train[LABEL_COL].value_counts().reset_index(), use_container_width=True)
 
 # ═══════════════════════════════════════════════════════════
-# PAGE: PREDIKSI MANUAL
+# PAGE: NOTEBOOK JUPYTER
 # ═══════════════════════════════════════════════════════════
-elif menu == "🔮 Prediksi Manual":
-    st.markdown("<h2 style='color:#1F4E79;'>🔮 Prediksi Kondisi Barang</h2>", unsafe_allow_html=True)
-    st.markdown("Masukkan data barang untuk memprediksi kelayakannya menggunakan model Naive Bayes yang sudah dilatih.")
+elif menu == "📓 Notebook Jupyter":
+    st.markdown("<h1 style='color:#1F4E79;'>📓 naive-bayes.ipynb</h1>", unsafe_allow_html=True)
+    st.markdown("**Isi notebook lengkap yang digunakan untuk analisis dan training model.**")
     st.markdown("---")
-
-    col_form, col_result = st.columns([1, 1])
-
-    with col_form:
-        section("Input Data Barang")
-        nama_input = st.text_input("Nama Barang", placeholder="Contoh: Laptop Dell")
-        model_sel  = st.selectbox("Pilih Model Prediksi", ["Gaussian Naive Bayes", "Bernoulli Naive Bayes"])
-
-        st.markdown("**Fitur Numerik:**")
-        tahun  = st.number_input("Tahun Pengadaan",     min_value=2015, max_value=2030, value=2023, step=1)
-        frek   = st.slider("Frekuensi Pemakaian (1=Jarang, 5=Sangat Sering)", 1, 5, 3)
-        umur   = st.slider("Umur Barang (tahun)",       0, 10, 2)
-        fisik  = st.slider("Kondisi Fisik (1=Rusak, 5=Sangat Baik)", 1, 5, 4)
-        lengkap= st.slider("Kelengkapan Aksesori (1=Tidak Lengkap, 5=Lengkap)", 1, 5, 4)
-
-        predict_btn = st.button("🔮 Prediksi Sekarang", use_container_width=True, type="primary")
-
-    with col_result:
-        section("Hasil Prediksi")
-        if predict_btn:
-            input_data = np.array([[tahun, frek, umur, fisik, lengkap]])
-            model      = gnb if "Gaussian" in model_sel else bnb
-            pred_enc   = model.predict(input_data)[0]
-            pred_label = le.inverse_transform([pred_enc])[0]
-            pred_proba = model.predict_proba(input_data)[0]
-
-            st.markdown(f"### Barang: **{nama_input if nama_input else 'Tidak disebutkan'}**")
-            st.markdown(f"**Hasil Prediksi:** {badge(pred_label)}", unsafe_allow_html=True)
-            st.markdown("---")
-
-            # Probabilitas per kelas
-            section("Probabilitas per Kelas")
-            prob_df = pd.DataFrame({
-                "Kelas"       : le.classes_,
-                "Probabilitas": [f"{p*100:.2f}%" for p in pred_proba],
-                "Nilai"       : pred_proba
-            })
-
-            fig_prob, ax_prob = plt.subplots(figsize=(6, 3))
-            bar_colors = [COLOR_MAP.get(c, "#999") for c in le.classes_]
-            bars = ax_prob.barh(le.classes_, pred_proba, color=bar_colors, edgecolor='white')
-            for bar, p in zip(bars, pred_proba):
-                ax_prob.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
-                             f"{p*100:.1f}%", va='center', fontweight='bold')
-            ax_prob.set_xlim(0, 1.15)
-            ax_prob.set_xlabel("Probabilitas"); ax_prob.set_title("P(Kelas | Fitur)")
-            ax_prob.set_facecolor("#F8F9FA"); fig_prob.patch.set_facecolor("white")
-            ax_prob.spines[['top','right']].set_visible(False)
-            st.pyplot(fig_prob, use_container_width=True)
-
-            # Rekomendasi
-            st.markdown("---")
-            section("Rekomendasi")
-            if pred_label == "LAYAK":
-                st.success("✅ Barang dalam kondisi baik. **Tidak perlu tindakan khusus.** Lanjutkan pemantauan rutin.")
-            elif pred_label == "KURANG LAYAK":
-                st.warning("⚠️ Barang perlu perhatian. **Lakukan perawatan atau perbaikan minor** sebelum kondisi memburuk.")
-            else:
-                st.error("❌ Barang tidak layak pakai. **Segera usulkan penggantian atau perbaikan besar.** Prioritas tinggi!")
-
-            # Ringkasan input
-            st.markdown("---")
-            section("Ringkasan Input")
-            ringkasan = {
-                "Tahun Pengadaan"    : tahun,
-                "Frekuensi Pemakaian": frek,
-                "Umur Barang (thn)"  : umur,
-                "Kondisi Fisik"      : fisik,
-                "Kelengkapan"        : lengkap,
-                "Model Digunakan"    : model_sel,
-                "Prediksi"           : pred_label,
-            }
-            st.dataframe(pd.DataFrame.from_dict(ringkasan, orient='index', columns=["Nilai"]),
-                         use_container_width=True)
-        else:
-            st.markdown("""
-            <div style='text-align:center; padding:60px 20px; color:#999;'>
-                <h3>⬅️ Isi form dan klik tombol<br><b>Prediksi Sekarang</b></h3>
-            </div>
-            """, unsafe_allow_html=True)
