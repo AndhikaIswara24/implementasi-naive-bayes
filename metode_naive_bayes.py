@@ -117,7 +117,7 @@ def preprocess_and_train(df_raw):
 
     df_raw.rename(columns=rename_map, inplace=True)
 
-    # ── 3. FIX #1 — Auto-detect kolom label dari ISI data ────
+    # ── 3. Auto-detect kolom label dari isi data ─────────────
     if "Label Kondisi" not in df_raw.columns:
         assigned_cols = set(rename_map.values()) | set(FITUR_COLS) | set(INFO_COLS)
         for col in df_raw.columns:
@@ -132,7 +132,6 @@ def preprocess_and_train(df_raw):
                 st.sidebar.info(f"🔍 Kolom label terdeteksi: **{col}**")
                 break
 
-    # ── 4. Gagal total → debug message ───────────────────────
     if "Label Kondisi" not in df_raw.columns:
         st.error("❌ Kolom **'Label Kondisi'** tidak ditemukan!")
         st.warning("📋 Kolom yang tersedia di CSV:")
@@ -142,36 +141,48 @@ def preprocess_and_train(df_raw):
 
     df = df_raw.copy()
 
-    # ── 5. Konversi fitur numerik ─────────────────────────────
+    # ── 4. Konversi fitur numerik ─────────────────────────────
     available_features = [col for col in FITUR_COLS if col in df.columns]
     for col in available_features:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-    # ── 6. Bersihkan label ────────────────────────────────────
+    # ── 5. Bersihkan label ────────────────────────────────────
     df_train = df[df["Label Kondisi"].notna()].copy()
     df_train["Label Kondisi"] = (
         df_train["Label Kondisi"].astype(str).str.strip().str.upper()
     )
 
-    # ── 7. Tampilkan distribusi label di sidebar ──────────────
+    # ── 5b. HAPUS BARIS YANG LABELNYA SAMA DENGAN NAMA KOLOM (misal "LABEL KONDISI") ──
+    kolom_label_nama = "Label Kondisi".upper()
+    df_train = df_train[~df_train["Label Kondisi"].str.contains(kolom_label_nama, case=False, na=False)]
+    df_train = df_train[df_train["Label Kondisi"].isin(KNOWN_LABELS)]
+
+    # ── 6. Tampilkan distribusi label di sidebar ──────────────
     label_dist = df_train["Label Kondisi"].value_counts()
     st.sidebar.markdown("### 📊 Distribusi Label")
     for lbl, cnt in label_dist.items():
         icon = "✅" if cnt >= 5 else ("⚠️" if cnt >= 2 else "❌")
         st.sidebar.markdown(f"{icon} **{lbl}**: {cnt} data")
 
-    # ── 8. FIX #2 — Hapus kelas yang hanya punya 1 anggota ───
+    # ── 7. Hapus kelas yang hanya punya 1 anggota ─────────────
     valid_labels = label_dist[label_dist >= 2].index
     removed_labels = label_dist[label_dist < 2].index.tolist()
 
     if removed_labels:
-        st.sidebar.error(f"🗑️ Kelas dihapus (< 2 data): **{removed_labels}**")
-        st.warning(
-            f"⚠️ Kelas **{removed_labels}** dihapus dari training "
-            "karena jumlah data terlalu sedikit (< 2). "
-            "Tambahkan lebih banyak data untuk kelas tersebut."
-        )
+        st.sidebar.warning(f"⚠️ Kelas dihapus dari training (data < 2): **{removed_labels}**")
+        st.info(f"💡 Kelas **{removed_labels}** tidak dilibatkan dalam pelatihan karena jumlah datanya terlalu sedikit (<2). Tambahkan lebih banyak data untuk kelas tersebut agar bisa diprediksi.")
         df_train = df_train[df_train["Label Kondisi"].isin(valid_labels)].copy()
+
+    # ── 8. Pastikan setelah pembersihan masih ada minimal 2 kelas dengan data cukup ──
+    if len(df_train) == 0:
+        st.error("❌ Tidak ada data yang valid untuk training setelah membersihkan label yang tidak dikenal atau terlalu sedikit.")
+        st.stop()
+
+    unique_labels_after = df_train["Label Kondisi"].nunique()
+    if unique_labels_after < 2:
+        st.error(f"❌ Jumlah kelas yang tersisa hanya {unique_labels_after} (butuh minimal 2 kelas berbeda untuk klasifikasi).")
+        st.info("Pastikan data mengandung setidaknya dua kondisi berbeda: LAYAK, KURANG LAYAK, atau TIDAK LAYAK, masing-masing minimal 2 baris.")
+        st.stop()
 
     # ── 9. Encode label ───────────────────────────────────────
     le = LabelEncoder()
@@ -180,12 +191,12 @@ def preprocess_and_train(df_raw):
     X = df_train[available_features]
     y = df_train["LABEL_ENC"]
 
-    # ── 10. FIX #2 — Stratify hanya jika semua kelas >= 2 ────
-    class_counts  = y.value_counts()
-    use_stratify  = y if class_counts.min() >= 2 else None
+    # ── 10. Stratify hanya jika semua kelas >= 2 ──────────────
+    class_counts = y.value_counts()
+    use_stratify = y if class_counts.min() >= 2 else None
 
     if use_stratify is None:
-        st.sidebar.warning("⚠️ Stratify dinonaktifkan\n(ada kelas dengan data < 2)")
+        st.sidebar.warning("⚠️ Stratify dinonaktifkan (ada kelas dengan data < 2)")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y,
