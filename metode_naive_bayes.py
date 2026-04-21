@@ -72,7 +72,7 @@ def load_data():
             st.error(f"❌ **File CSV TIDAK DITEMUKAN**: {csv_path}")
             st.stop()
         
-        df_raw = pd.read_csv(csv_path)
+        df_raw = pd.read_csv(csv_path, header=1)
         st.sidebar.success(f"✅ Loaded: **{len(df_raw):,d}** rows")
         return df_raw
     except Exception as e:
@@ -88,20 +88,19 @@ def preprocess_and_train(df_raw):
     df_raw.columns = [str(c).strip().upper().replace(" ", "_") for c in df_raw.columns]
     print("DEBUG: Columns setelah normalize:", df_raw.columns.tolist())
     
-    # Flexible column mapping ✅
+    # Flexible column mapping ✅ - More specific patterns
     rename_map = {}
     for c in df_raw.columns:
-        if any(x in c for x in ["NAMA", "NAMA BARANG"]): rename_map[c] = "NAMA_BARANG"
-        elif "MERK" in c: rename_map[c] = "MERK"
-        elif "KODE" in c: rename_map[c] = "KODE_BARANG"
+        if "NAMA_BARANG" in c or "NAMA" in c: rename_map[c] = "NAMA_BARANG"
+        elif "MERK" == c or "MERK" in c: rename_map[c] = "MERK"
+        elif "KODE_BARANG" in c or "KODE" in c: rename_map[c] = "KODE_BARANG"
         elif "KATEGORI" in c: rename_map[c] = "KATEGORI_BARANG"
-        elif "TAHUN" in c: rename_map[c] = "TAHUN_PENGADAAN"
-        elif "FREKUENSI" in c: rename_map[c] = "FREKUENSI_PEMAKAIAN"
-        elif "UMUR" in c: rename_map[c] = "UMUR_BARANG"
-        elif "KONDISI_FISIK" in c: rename_map[c] = "KONDISI_FISIK"
+        elif "TAHUN_PENGADAAN" in c or ("TAHUN" in c and "PENGADAAN" in c): rename_map[c] = "TAHUN_PENGADAAN"
+        elif "FREKUENSI_PEMAKAIAN" in c or "FREKUENSI" in c: rename_map[c] = "FREKUENSI_PEMAKAIAN"
+        elif "UMUR_BARANG" in c or ("UMUR" in c and "BARANG" in c): rename_map[c] = "UMUR_BARANG"
+        elif "KONDISI_FISIK" in c or ("KONDISI" in c and "FISIK" in c): rename_map[c] = "KONDISI_FISIK"
         elif "KELENGKAPAN" in c: rename_map[c] = "KELENGKAPAN"
-        elif any(x in c for x in ["LABEL", "LABEL_KONDISI", "LABEL KONDISI"]): 
-            rename_map[c] = "Label Kondisi"  # ✅ EXACT MATCH
+        elif "LABEL_KONDISI" in c or "LABEL" in c: rename_map[c] = "Label Kondisi"
     
     df_raw.rename(columns=rename_map, inplace=True)
     print("DEBUG: Columns setelah rename:", df_raw.columns.tolist())
