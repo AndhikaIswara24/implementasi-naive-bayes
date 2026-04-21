@@ -28,56 +28,94 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-/* ===== GLOBAL TEXT FIX ===== */
-html, body, [class*="css"]  {
-    color: #000000 !important;
-}
-
-/* Main App */
-.stApp {
-    background-color: #F0F4F8;
-    color: #000000 !important;
-}
-
-/* Semua teks utama */
-h1, h2, h3, h4, h5, h6,
-p, span, div, label,
-strong, small {
-    color: #000000 !important;
-    opacity: 1 !important;
-}
-
-/* Judul Streamlit */
-[data-testid="stAppViewContainer"] h1,
-[data-testid="stAppViewContainer"] h2,
-[data-testid="stAppViewContainer"] h3 {
-    color: #000000 !important;
-}
-
-/* Markdown */
-.stMarkdown {
-    color: #000000 !important;
-}
-
-/* Sidebar tetap putih */
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%);
-}
-section[data-testid="stSidebar"] * {
-    color: white !important;
-}
-
-/* Hilangkan transparan */
-* {
-    opacity: 1 !important;
-}
-
-/* Hide menu */
-#MainMenu, footer {
-    visibility: hidden;
-}
+    /* Main app - FONT HITAM */
+    .stApp { 
+        background-color: #F0F4F8; 
+        color: #000000 !important; 
+        font-family: 'Segoe UI', sans-serif;
+    }
+    
+    /* Header & Title - HITAM */
+    h1, h2, h3, h4, h5, h6 {
+        color: #1F4E79 !important;
+    }
+    
+    /* Text - SEMUA HITAM */
+    .stMarkdown, p, div, span, label {
+        color: #000000 !important;
+    }
+    
+    /* Dataframe - HITAM */
+    .dataframe tbody tr td {
+        color: #000000 !important;
+    }
+    
+    /* Sidebar - WHITE tetap */
+    section[data-testid="stSidebar"] { 
+        background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%); 
+    }
+    section[data-testid="stSidebar"] * { 
+        color: white !important; 
+    }
+    
+    /* Metric cards - HITAM TEXT */
+    .metric-card { 
+        background: white; 
+        border-radius: 12px; 
+        padding: 20px 24px; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+        border-left: 5px solid #2E75B6; 
+        margin-bottom: 12px;
+        color: #000000 !important;
+    }
+    .metric-card.green  { border-left-color: #70AD47; }
+    .metric-card.yellow { border-left-color: #FFC000; }
+    .metric-card.red    { border-left-color: #FF0000; }
+    .metric-card.blue   { border-left-color: #2E75B6; }
+    .metric-val  { 
+        font-size: 2.2rem; 
+        font-weight: 700; 
+        color: #1F4E79 !important; 
+    }
+    .metric-label { 
+        font-size: 0.95rem; 
+        color: #333333 !important; 
+        margin-top: 4px; 
+    }
+    
+    /* Section header */
+    .section-header { 
+        background: linear-gradient(90deg, #1F4E79, #2E75B6); 
+        color: white !important; 
+        padding: 12px 20px; 
+        border-radius: 8px; 
+        font-size: 1.1rem; 
+        font-weight: 600; 
+        margin: 25px 0 15px 0;
+    }
+    
+    /* Badges */
+    .badge-layak    { background:#70AD47 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    .badge-kurang   { background:#FFC000 !important; color:#000000 !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    .badge-tidak    { background:#FF0000 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    
+    /* Streamlit elements - HITAM */
+    [data-testid="stMetricLabel"] { color: #333333 !important; }
+    [data-testid="stMetricValue"] { color: #1F4E79 !important; }
+    
+    /* Tables & Dataframes */
+    .stDataFrame table { color: #000000 !important; }
+    
+    /* Inputs */
+    .stSelectbox > label, .stSlider > label, .stTextInput > label {
+        color: #000000 !important;
+    }
+    
+    hr { border: 1px solid #D0D7DE; margin: 20px 0; }
+    #MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
