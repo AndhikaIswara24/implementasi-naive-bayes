@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────
-# CSS
+# CSS (sama seperti kode Anda)
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -52,7 +52,7 @@ LABEL_COL    = "Label Kondisi"
 FITUR_COLS   = ["TAHUN_PENGADAAN", "FREKUENSI_PEMAKAIAN", "UMUR_BARANG", "KONDISI_FISIK", "KELENGKAPAN"]
 INFO_COLS    = ["NAMA_BARANG", "MERK", "KODE_BARANG", "KATEGORI_BARANG"]
 COLOR_MAP    = {"LAYAK": "#70AD47", "KURANG LAYAK": "#FFC000", "TIDAK LAYAK": "#FF0000"}
-KNOWN_LABELS = {"LAYAK", "KURANG LAYAK", "TIDAK LAYAK", "KURANG_LAYAK", "TIDAK_LAYAK"}
+KNOWN_LABELS = {"LAYAK", "KURANG LAYAK", "TIDAK LAYAK"}  # tanpa underscore
 
 def badge(label):
     cls = {"LAYAK": "badge-layak", "KURANG LAYAK": "badge-kurang", "TIDAK LAYAK": "badge-tidak"}.get(label, "")
@@ -90,16 +90,16 @@ def load_data():
         st.stop()
 
 # ─────────────────────────────────────────────────────────────
-# PREPROCESS & TRAIN  (semua fix diterapkan di sini)
+# PREPROCESS & TRAIN (VERSI FINAL - TIDAK ERROR)
 # ─────────────────────────────────────────────────────────────
 @st.cache_data
 def preprocess_and_train(df_raw):
     df_raw = df_raw.copy()
 
-    # ── 1. Normalisasi nama kolom ─────────────────────────────
+    # 1. Normalisasi nama kolom
     df_raw.columns = [str(c).strip().upper().replace(" ", "_") for c in df_raw.columns]
 
-    # ── 2. Mapping kolom berdasarkan nama ─────────────────────
+    # 2. Mapping kolom
     rename_map = {}
     for c in df_raw.columns:
         cu = c.upper()
@@ -117,7 +117,7 @@ def preprocess_and_train(df_raw):
 
     df_raw.rename(columns=rename_map, inplace=True)
 
-    # ── 3. Auto-detect kolom label dari isi data ─────────────
+    # 3. Auto-detect kolom label
     if "Label Kondisi" not in df_raw.columns:
         assigned_cols = set(rename_map.values()) | set(FITUR_COLS) | set(INFO_COLS)
         for col in df_raw.columns:
@@ -141,57 +141,68 @@ def preprocess_and_train(df_raw):
 
     df = df_raw.copy()
 
-    # ── 4. Konversi fitur numerik ─────────────────────────────
+    # 4. Konversi fitur numerik
     available_features = [col for col in FITUR_COLS if col in df.columns]
     for col in available_features:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
-    # ── 5. Bersihkan label ────────────────────────────────────
+    # 5. Bersihkan label: hapus NA, strip, upper
     df_train = df[df["Label Kondisi"].notna()].copy()
     df_train["Label Kondisi"] = (
         df_train["Label Kondisi"].astype(str).str.strip().str.upper()
     )
 
-    # ── 5b. HAPUS BARIS YANG LABELNYA SAMA DENGAN NAMA KOLOM (misal "LABEL KONDISI") ──
-    kolom_label_nama = "Label Kondisi".upper()
-    df_train = df_train[~df_train["Label Kondisi"].str.contains(kolom_label_nama, case=False, na=False)]
+    # 5b. HAPUS SEMUA BARIS YANG LABELNYA TIDAK ADA DI KNOWN_LABELS
+    #     (termasuk "LABEL KONDISI", "KONDISI", dll)
     df_train = df_train[df_train["Label Kondisi"].isin(KNOWN_LABELS)]
 
-    # ── 6. Tampilkan distribusi label di sidebar ──────────────
+    # 5c. Hapus juga baris yang nilai labelnya sama persis dengan nama kolom (misal "LABEL KONDISI")
+    #     (sudah tercover oleh isin, tapi amankan)
+    kolom_label_nama = "Label Kondisi".upper()
+    df_train = df_train[df_train["Label Kondisi"] != kolom_label_nama]
+
+    # 6. Cek apakah masih ada data
+    if len(df_train) == 0:
+        st.error("❌ **Tidak ada data valid** setelah membersihkan label yang tidak dikenal.")
+        st.info("Pastikan file CSV memiliki kolom dengan nilai **LAYAK**, **KURANG LAYAK**, atau **TIDAK LAYAK** (minimal 2 baris per kelas).")
+        st.stop()
+
+    # 7. Distribusi label setelah pembersihan
     label_dist = df_train["Label Kondisi"].value_counts()
-    st.sidebar.markdown("### 📊 Distribusi Label")
+    st.sidebar.markdown("### 📊 Distribusi Label (Valid)")
     for lbl, cnt in label_dist.items():
         icon = "✅" if cnt >= 5 else ("⚠️" if cnt >= 2 else "❌")
         st.sidebar.markdown(f"{icon} **{lbl}**: {cnt} data")
 
-    # ── 7. Hapus kelas yang hanya punya 1 anggota ─────────────
+    # 8. Hapus kelas yang hanya punya 1 anggota (karena tidak bisa untuk split & training)
     valid_labels = label_dist[label_dist >= 2].index
     removed_labels = label_dist[label_dist < 2].index.tolist()
 
     if removed_labels:
-        st.sidebar.warning(f"⚠️ Kelas dihapus dari training (data < 2): **{removed_labels}**")
-        st.info(f"💡 Kelas **{removed_labels}** tidak dilibatkan dalam pelatihan karena jumlah datanya terlalu sedikit (<2). Tambahkan lebih banyak data untuk kelas tersebut agar bisa diprediksi.")
+        st.sidebar.warning(f"⚠️ Kelas dihapus (data < 2): **{removed_labels}**")
+        st.info(f"💡 Kelas **{removed_labels}** tidak dilibatkan dalam pelatihan karena jumlah datanya terlalu sedikit. Tambahkan data untuk kelas tersebut agar bisa diprediksi.")
         df_train = df_train[df_train["Label Kondisi"].isin(valid_labels)].copy()
 
-    # ── 8. Pastikan setelah pembersihan masih ada minimal 2 kelas dengan data cukup ──
+    # 9. Pastikan setelah penghapusan masih ada minimal 2 kelas dengan data cukup
     if len(df_train) == 0:
-        st.error("❌ Tidak ada data yang valid untuk training setelah membersihkan label yang tidak dikenal atau terlalu sedikit.")
+        st.error("❌ **Tidak ada kelas yang memenuhi syarat** (masing-masing minimal 2 data).")
+        st.info("Tambahkan data dengan kondisi LAYAK, KURANG LAYAK, atau TIDAK LAYAK (minimal 2 baris per kelas).")
         st.stop()
 
-    unique_labels_after = df_train["Label Kondisi"].nunique()
-    if unique_labels_after < 2:
-        st.error(f"❌ Jumlah kelas yang tersisa hanya {unique_labels_after} (butuh minimal 2 kelas berbeda untuk klasifikasi).")
-        st.info("Pastikan data mengandung setidaknya dua kondisi berbeda: LAYAK, KURANG LAYAK, atau TIDAK LAYAK, masing-masing minimal 2 baris.")
+    unique_classes = df_train["Label Kondisi"].nunique()
+    if unique_classes < 2:
+        st.error(f"❌ **Hanya ditemukan {unique_classes} kelas** setelah pembersihan. Diperlukan minimal 2 kelas berbeda untuk klasifikasi.")
+        st.info("Contoh: data harus berisi setidaknya dua kondisi berbeda, misal LAYAK dan TIDAK LAYAK.")
         st.stop()
 
-    # ── 9. Encode label ───────────────────────────────────────
+    # 10. Encode label
     le = LabelEncoder()
     df_train["LABEL_ENC"] = le.fit_transform(df_train["Label Kondisi"])
 
     X = df_train[available_features]
     y = df_train["LABEL_ENC"]
 
-    # ── 10. Stratify hanya jika semua kelas >= 2 ──────────────
+    # 11. Split dengan stratify hanya jika semua kelas >= 2
     class_counts = y.value_counts()
     use_stratify = y if class_counts.min() >= 2 else None
 
@@ -205,7 +216,7 @@ def preprocess_and_train(df_raw):
         stratify=use_stratify
     )
 
-    # ── 11. Training model ────────────────────────────────────
+    # 12. Training model
     gnb = GaussianNB()
     bnb = BernoulliNB()
     gnb.fit(X_train, y_train)
@@ -219,7 +230,7 @@ def preprocess_and_train(df_raw):
             y_pred_gnb, y_pred_bnb, available_features)
 
 # ─────────────────────────────────────────────────────────────
-# MAIN APP
+# MAIN APP (sama seperti kode Anda, tidak perlu diubah)
 # ─────────────────────────────────────────────────────────────
 try:
     st.title("📦 **Sistem Inventaris Naive Bayes**")
@@ -234,7 +245,7 @@ try:
 
     label_counts = df_train["Label Kondisi"].value_counts()
 
-    # ── Sidebar ───────────────────────────────────────────────
+    # Sidebar menu (sama)
     with st.sidebar:
         st.markdown("### 📦 **Inventaris NB**")
         st.markdown("**SMK Muhammadiyah 12**")
@@ -249,17 +260,14 @@ try:
             "🔮 Prediksi Baru"
         ])
 
-    # ══════════════════════════════════════════════════════════
-    # PAGE: Dashboard
-    # ══════════════════════════════════════════════════════════
+    # DASHBOARD
     if menu == "🏠 Dashboard":
         st.markdown("### 🏠 **Dashboard Utama**")
-
         col1, col2, col3, col4 = st.columns(4)
-        with col1: st.markdown(metric_card(f"{len(df):,d}", "Total Barang", "blue"),        unsafe_allow_html=True)
-        with col2: st.markdown(metric_card(label_counts.get("LAYAK", 0), "Layak ✅", "green"),          unsafe_allow_html=True)
+        with col1: st.markdown(metric_card(f"{len(df):,d}", "Total Barang", "blue"), unsafe_allow_html=True)
+        with col2: st.markdown(metric_card(label_counts.get("LAYAK", 0), "Layak ✅", "green"), unsafe_allow_html=True)
         with col3: st.markdown(metric_card(label_counts.get("KURANG LAYAK", 0), "Kurang ⚠️", "yellow"), unsafe_allow_html=True)
-        with col4: st.markdown(metric_card(label_counts.get("TIDAK LAYAK", 0), "Tidak Layak ❌", "red"),unsafe_allow_html=True)
+        with col4: st.markdown(metric_card(label_counts.get("TIDAK LAYAK", 0), "Tidak Layak ❌", "red"), unsafe_allow_html=True)
 
         col_left, col_right = st.columns([2, 1])
         with col_left:
@@ -271,44 +279,32 @@ try:
             plt.xticks(rotation=45, ha='right')
             plt.tight_layout()
             st.pyplot(fig)
-
         with col_right:
             section("🎯 Akurasi Model")
             acc_gnb = accuracy_score(y_test, y_pred_gnb) * 100
             acc_bnb = accuracy_score(y_test, y_pred_bnb) * 100
-            st.markdown(metric_card(f"{acc_gnb:.1f}%", "Gaussian NB",  "blue"), unsafe_allow_html=True)
+            st.markdown(metric_card(f"{acc_gnb:.1f}%", "Gaussian NB", "blue"), unsafe_allow_html=True)
             st.markdown(metric_card(f"{acc_bnb:.1f}%", "Bernoulli NB", "blue"), unsafe_allow_html=True)
 
-    # ══════════════════════════════════════════════════════════
     # PAGE: Data Inventaris
-    # ══════════════════════════════════════════════════════════
     elif menu == "📋 Data Inventaris":
         st.markdown("### 📋 **Data Inventaris Lengkap**")
-
         col1, col2 = st.columns(2)
         with col1:
-            filter_label = st.selectbox(
-                "Filter Kondisi:",
-                ["Semua"] + sorted(df_train["Label Kondisi"].unique().tolist())
-            )
+            filter_label = st.selectbox("Filter Kondisi:", ["Semua"] + sorted(df_train["Label Kondisi"].unique().tolist()))
         with col2:
             search = st.text_input("🔍 Cari nama barang:", placeholder="Ketik nama barang...")
-
         df_view = df_train.copy()
         if filter_label != "Semua":
             df_view = df_view[df_view["Label Kondisi"] == filter_label]
         if search and "NAMA_BARANG" in df_view.columns:
             df_view = df_view[df_view["NAMA_BARANG"].str.contains(search, case=False, na=False)]
-
         st.info(f"**Menampilkan {len(df_view):,d} dari {len(df_train):,d} data**")
         st.dataframe(df_view, use_container_width=True, height=600)
 
-    # ══════════════════════════════════════════════════════════
     # PAGE: Model Evaluasi
-    # ══════════════════════════════════════════════════════════
     elif menu == "🤖 Model Evaluasi":
         st.markdown("### 🤖 **Evaluasi Model Naive Bayes**")
-
         col1, col2 = st.columns(2)
         with col1:
             section("Gaussian Naive Bayes")
@@ -320,7 +316,6 @@ try:
             st.metric("Precision", f"{prec_g*100:.2f}%")
             st.metric("Recall",    f"{rec_g*100:.2f}%")
             st.metric("F1-Score",  f"{f1_g*100:.2f}%")
-
         with col2:
             section("Bernoulli Naive Bayes")
             acc_b  = accuracy_score(y_test, y_pred_bnb)
@@ -331,7 +326,6 @@ try:
             st.metric("Precision", f"{prec_b*100:.2f}%")
             st.metric("Recall",    f"{rec_b*100:.2f}%")
             st.metric("F1-Score",  f"{f1_b*100:.2f}%")
-
         st.markdown("---")
         st.markdown("#### 📄 Classification Report")
         model_rep = st.selectbox("Pilih Model Report:", ["Gaussian NB", "Bernoulli NB"])
@@ -339,14 +333,11 @@ try:
         report = classification_report(y_test, y_rep, target_names=le.classes_, zero_division=0)
         st.code(report)
 
-    # ══════════════════════════════════════════════════════════
     # PAGE: Confusion Matrix
-    # ══════════════════════════════════════════════════════════
     elif menu == "📊 Confusion Matrix":
         st.markdown("### 📊 **Confusion Matrix**")
         model_choice = st.selectbox("Pilih Model:", ["Gaussian NB", "Bernoulli NB"])
         y_pred = y_pred_gnb if model_choice == "Gaussian NB" else y_pred_bnb
-
         fig, ax = plt.subplots(figsize=(8, 6))
         cm = confusion_matrix(y_test, y_pred)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
@@ -357,32 +348,23 @@ try:
         plt.tight_layout()
         st.pyplot(fig)
 
-    # ══════════════════════════════════════════════════════════
     # PAGE: Prediksi Baru
-    # ══════════════════════════════════════════════════════════
     elif menu == "🔮 Prediksi Baru":
         st.markdown("### 🔮 **Prediksi Kondisi Barang Baru**")
-
         col_form, col_result = st.columns([1, 1])
-
         with col_form:
             section("📝 Input Data")
             nama_barang   = st.text_input("Nama Barang:", placeholder="Contoh: Laptop Dell")
             model_pilihan = st.selectbox("Model:", ["Gaussian NB", "Bernoulli NB"])
-
             st.markdown("**Fitur Numerik:**")
             tahun        = st.slider("📅 Tahun Pengadaan", 2015, 2025, 2023)
             frekuensi    = st.slider("⏰ Frekuensi Pemakaian (1=Jarang, 5=Sering)", 1, 5, 3)
             umur         = st.slider("📏 Umur Barang (tahun)", 0, 10, 2)
             kondisi_fisik= st.slider("🔧 Kondisi Fisik (1=Rusak, 5=Baik)", 1, 5, 4)
             kelengkapan  = st.slider("📦 Kelengkapan (1=Tidak lengkap, 5=Lengkap)", 1, 5, 4)
-
             predict_btn = st.button("🔮 **Lakukan Prediksi**", use_container_width=True, type="primary")
-
-        # Tampilkan hasil di luar button agar kolom kanan selalu terrender
         with col_result:
             if predict_btn:
-                # Sesuaikan urutan input dengan feature_cols yang tersedia
                 input_vals = {
                     "TAHUN_PENGADAAN":    tahun,
                     "FREKUENSI_PEMAKAIAN": frekuensi,
@@ -391,27 +373,17 @@ try:
                     "KELENGKAPAN":        kelengkapan,
                 }
                 input_data = np.array([[input_vals[f] for f in feature_cols]])
-
                 model      = gnb if model_pilihan == "Gaussian NB" else bnb
                 prediction = model.predict(input_data)[0]
                 pred_label = le.inverse_transform([prediction])[0]
                 proba      = model.predict_proba(input_data)[0]
-
                 section("📊 Hasil Prediksi")
                 st.markdown(f"**Barang:** {nama_barang or 'Tidak disebutkan'}")
                 st.markdown(f"**Prediksi:** {badge(pred_label)}", unsafe_allow_html=True)
                 st.success(f"Model: **{model_pilihan}**")
-                st.info(
-                    f"Input → Tahun: **{tahun}** | Frekuensi: **{frekuensi}** | "
-                    f"Umur: **{umur}** | Fisik: **{kondisi_fisik}** | Lengkap: **{kelengkapan}**"
-                )
-
-                # Probabilitas per kelas
+                st.info(f"Input → Tahun: **{tahun}** | Frekuensi: **{frekuensi}** | Umur: **{umur}** | Fisik: **{kondisi_fisik}** | Lengkap: **{kelengkapan}**")
                 st.markdown("**🎲 Probabilitas per Kelas:**")
-                proba_df = pd.DataFrame({
-                    "Kelas": le.classes_,
-                    "Probabilitas (%)": [f"{p*100:.2f}%" for p in proba]
-                })
+                proba_df = pd.DataFrame({"Kelas": le.classes_, "Probabilitas (%)": [f"{p*100:.2f}%" for p in proba]})
                 st.dataframe(proba_df, use_container_width=True, hide_index=True)
             else:
                 st.info("👈 Isi form di kiri lalu klik **Lakukan Prediksi**")
