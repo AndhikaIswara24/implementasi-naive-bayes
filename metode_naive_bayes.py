@@ -23,31 +23,103 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ─────────────────────────────────────────────────────────────
+# FIXED CSS - FONT HITAM SEMUA
+# ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .stApp { background-color: #F0F4F8; }
-    section[data-testid="stSidebar"] { background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%); }
-    section[data-testid="stSidebar"] * { color: white !important; }
-    .metric-card { background: white; border-radius: 12px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #2E75B6; margin-bottom: 12px; }
+    /* Main app - FONT HITAM */
+    .stApp { 
+        background-color: #F0F4F8; 
+        color: #000000 !important; 
+        font-family: 'Segoe UI', sans-serif;
+    }
+    
+    /* Header & Title - HITAM */
+    h1, h2, h3, h4, h5, h6 {
+        color: #1F4E79 !important;
+    }
+    
+    /* Text - SEMUA HITAM */
+    .stMarkdown, p, div, span, label {
+        color: #000000 !important;
+    }
+    
+    /* Dataframe - HITAM */
+    .dataframe tbody tr td {
+        color: #000000 !important;
+    }
+    
+    /* Sidebar - WHITE tetap */
+    section[data-testid="stSidebar"] { 
+        background: linear-gradient(180deg, #1F4E79 0%, #2E75B6 100%); 
+    }
+    section[data-testid="stSidebar"] * { 
+        color: white !important; 
+    }
+    
+    /* Metric cards - HITAM TEXT */
+    .metric-card { 
+        background: white; 
+        border-radius: 12px; 
+        padding: 20px 24px; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+        border-left: 5px solid #2E75B6; 
+        margin-bottom: 12px;
+        color: #000000 !important;
+    }
     .metric-card.green  { border-left-color: #70AD47; }
     .metric-card.yellow { border-left-color: #FFC000; }
     .metric-card.red    { border-left-color: #FF0000; }
     .metric-card.blue   { border-left-color: #2E75B6; }
-    .metric-val  { font-size: 2rem; font-weight: 700; color: #1F4E79; }
-    .metric-label{ font-size: 0.85rem; color: #666; margin-top: 4px; }
-    .section-header { background: linear-gradient(90deg, #1F4E79, #2E75B6); color: white; padding: 10px 18px; border-radius: 8px; font-size: 1.05rem; font-weight: 600; margin: 20px 0 14px 0; }
-    .badge-layak    { background:#70AD47; color:white; padding:6px 16px; border-radius:20px; font-weight:700; }
-    .badge-kurang   { background:#FFC000; color:white; padding:6px 16px; border-radius:20px; font-weight:700; }
-    .badge-tidak    { background:#FF0000; color:white; padding:6px 16px; border-radius:20px; font-weight:700; }
-    hr { border: 1px solid #D0D7DE; margin: 18px 0; }
+    .metric-val  { 
+        font-size: 2.2rem; 
+        font-weight: 700; 
+        color: #1F4E79 !important; 
+    }
+    .metric-label { 
+        font-size: 0.95rem; 
+        color: #333333 !important; 
+        margin-top: 4px; 
+    }
+    
+    /* Section header */
+    .section-header { 
+        background: linear-gradient(90deg, #1F4E79, #2E75B6); 
+        color: white !important; 
+        padding: 12px 20px; 
+        border-radius: 8px; 
+        font-size: 1.1rem; 
+        font-weight: 600; 
+        margin: 25px 0 15px 0;
+    }
+    
+    /* Badges */
+    .badge-layak    { background:#70AD47 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    .badge-kurang   { background:#FFC000 !important; color:#000000 !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    .badge-tidak    { background:#FF0000 !important; color:white !important; padding:8px 18px; border-radius:25px; font-weight:700; font-size:1rem; }
+    
+    /* Streamlit elements - HITAM */
+    [data-testid="stMetricLabel"] { color: #333333 !important; }
+    [data-testid="stMetricValue"] { color: #1F4E79 !important; }
+    
+    /* Tables & Dataframes */
+    .stDataFrame table { color: #000000 !important; }
+    
+    /* Inputs */
+    .stSelectbox > label, .stSlider > label, .stTextInput > label {
+        color: #000000 !important;
+    }
+    
+    hr { border: 1px solid #D0D7DE; margin: 20px 0; }
     #MainMenu, footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
-# CONSTANTS - FIXED LABEL NAME
+# CONSTANTS
 # ─────────────────────────────────────────────────────────────
-LABEL_COL = "Label Kondisi"  # ✅ DIUBAH SESUAI REQUEST
+LABEL_COL = "Label Kondisi"
 FITUR_COLS = ["TAHUN_PENGADAAN", "FREKUENSI_PEMAKAIAN", "UMUR_BARANG", "KONDISI_FISIK", "KELENGKAPAN"]
 INFO_COLS = ["NAMA_BARANG", "MERK", "KODE_BARANG", "KATEGORI_BARANG"]
 
@@ -58,21 +130,30 @@ def badge(label):
     return f'<span class="{cls}">{label}</span>'
 
 def metric_card(val, label, color="blue"):
-    return f'<div class="metric-card {color}"><div class="metric-val">{val}</div><div class="metric-label">{label}</div></div>'
+    return f'''
+    <div class="metric-card {color}">
+        <div class="metric-val">{val}</div>
+        <div class="metric-label">{label}</div>
+    </div>
+    '''
 
 def section(title):
     st.markdown(f'<div class="section-header">📌 {title}</div>', unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
-    """✅ SAFE LOAD CSV dengan error handling"""
     csv_path = "Data Inventaris SMK Muhammadiyah 12 - Tahun 2025.csv"
     try:
         if not os.path.exists(csv_path):
             st.error(f"❌ **File CSV TIDAK DITEMUKAN**: {csv_path}")
             st.stop()
         
-        df_raw = pd.read_csv(csv_path, header=1)
+        # Try header=0 first, then header=1
+        try:
+            df_raw = pd.read_csv(csv_path)
+        except:
+            df_raw = pd.read_csv(csv_path, header=1)
+        
         st.sidebar.success(f"✅ Loaded: **{len(df_raw):,d}** rows")
         return df_raw
     except Exception as e:
@@ -81,65 +162,54 @@ def load_data():
 
 @st.cache_data
 def preprocess_and_train(df_raw):
-    """✅ ROBUST PREPROCESSING - Handle missing columns"""
-    print("DEBUG: Columns awal:", df_raw.columns.tolist())
+    """Robust preprocessing dengan debug"""
+    print("DEBUG: Columns:", df_raw.columns.tolist())
     
-    # Normalize column names
+    # Normalize columns
     df_raw.columns = [str(c).strip().upper().replace(" ", "_") for c in df_raw.columns]
-    print("DEBUG: Columns setelah normalize:", df_raw.columns.tolist())
     
-    # Flexible column mapping ✅ - More specific patterns
+    # Comprehensive column mapping
     rename_map = {}
     for c in df_raw.columns:
-        if "NAMA_BARANG" in c or "NAMA" in c: rename_map[c] = "NAMA_BARANG"
-        elif "MERK" == c or "MERK" in c: rename_map[c] = "MERK"
-        elif "KODE_BARANG" in c or "KODE" in c: rename_map[c] = "KODE_BARANG"
+        if any(x in c for x in ["NAMA", "NAMA BARANG"]): rename_map[c] = "NAMA_BARANG"
+        elif "MERK" in c: rename_map[c] = "MERK"
+        elif "KODE" in c: rename_map[c] = "KODE_BARANG"
         elif "KATEGORI" in c: rename_map[c] = "KATEGORI_BARANG"
-        elif "TAHUN_PENGADAAN" in c or ("TAHUN" in c and "PENGADAAN" in c): rename_map[c] = "TAHUN_PENGADAAN"
-        elif "FREKUENSI_PEMAKAIAN" in c or "FREKUENSI" in c: rename_map[c] = "FREKUENSI_PEMAKAIAN"
-        elif "UMUR_BARANG" in c or ("UMUR" in c and "BARANG" in c): rename_map[c] = "UMUR_BARANG"
-        elif "KONDISI_FISIK" in c or ("KONDISI" in c and "FISIK" in c): rename_map[c] = "KONDISI_FISIK"
+        elif "TAHUN" in c: rename_map[c] = "TAHUN_PENGADAAN"
+        elif "FREKUENSI" in c: rename_map[c] = "FREKUENSI_PEMAKAIAN"
+        elif "UMUR" in c: rename_map[c] = "UMUR_BARANG"
+        elif "KONDISI_FISIK" in c: rename_map[c] = "KONDISI_FISIK"
         elif "KELENGKAPAN" in c: rename_map[c] = "KELENGKAPAN"
-        elif "LABEL_KONDISI" in c or "LABEL" in c: rename_map[c] = "Label Kondisi"
+        elif "LABEL" in c: rename_map[c] = "Label Kondisi"
     
     df_raw.rename(columns=rename_map, inplace=True)
-    print("DEBUG: Columns setelah rename:", df_raw.columns.tolist())
     
-    # Check required columns
     if "Label Kondisi" not in df_raw.columns:
-        st.error("❌ **Kolom 'Label Kondisi' TIDAK DITEMUKAN**")
-        st.write("Kolom tersedia:", df_raw.columns.tolist())
+        st.error("❌ Kolom 'Label Kondisi' tidak ditemukan!")
+        st.write("Columns:", df_raw.columns.tolist())
         st.stop()
     
     df = df_raw.copy()
     
-    # Safe numeric conversion
+    # Numeric features
     available_features = [col for col in FITUR_COLS if col in df.columns]
     for col in available_features:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
     
-    # Filter training data ✅ SAFE FILTER
+    # Training data
     df_train = df[df["Label Kondisi"].notna()].copy()
-    if len(df_train) == 0:
-        st.error("❌ **Tidak ada data dengan Label Kondisi yang valid**")
-        st.stop()
-    
     df_train["Label Kondisi"] = df_train["Label Kondisi"].astype(str).str.strip().str.upper()
     
-    # Label encoding
     le = LabelEncoder()
     df_train["LABEL_ENC"] = le.fit_transform(df_train["Label Kondisi"])
     
     X = df_train[available_features]
     y = df_train["LABEL_ENC"]
     
-    if len(y.unique()) < 2:
-        st.warning("⚠️ Hanya 1 kelas ditemukan, menggunakan full data untuk training")
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y if len(y.unique()) > 1 else None
+    )
     
-    # Train models
     gnb = GaussianNB()
     bnb = BernoulliNB()
     gnb.fit(X_train, y_train)
@@ -148,133 +218,141 @@ def preprocess_and_train(df_raw):
     y_pred_gnb = gnb.predict(X_test)
     y_pred_bnb = bnb.predict(X_test)
     
-    print(f"✅ Training selesai. Features: {available_features}, Classes: {le.classes_}")
     return (df, df_train, le, gnb, bnb, X_train, X_test, y_train, y_test, y_pred_gnb, y_pred_bnb, available_features)
 
-@st.cache_data
-def load_notebook():
-    try:
-        if os.path.exists("naive-bayes.ipynb"):
-            with open("naive-bayes.ipynb", "r", encoding="utf-8") as f:
-                return json.load(f)
-        return None
-    except:
-        return None
-
 # ─────────────────────────────────────────────────────────────
-# MAIN APP - AUTO LOAD ✅
+# MAIN APP
 # ─────────────────────────────────────────────────────────────
 try:
     st.title("📦 **Sistem Inventaris Naive Bayes**")
-    st.markdown("**SMK Muhammadiyah 12 - Tahun 2025**")
+    st.markdown("***SMK Muhammadiyah 12 - Tahun 2025***")
     
-    # Load everything
     df_raw = load_data()
     model_data = preprocess_and_train(df_raw)
-    notebook = load_notebook()
     
     (df, df_train, le, gnb, bnb, X_train, X_test, y_train, y_test, y_pred_gnb, y_pred_bnb, feature_cols) = model_data
     label_counts = df_train["Label Kondisi"].value_counts()
     
     # Sidebar
     with st.sidebar:
-        st.markdown("## 📦 **Inventaris NB**")
+        st.markdown("### 📦 **Inventaris NB**")
         st.markdown("**SMK Muhammadiyah 12**")
-        col1, col2 = st.columns(2)
-        with col1: st.metric("Total", len(df))
-        with col2: st.metric("Training", len(df_train))
+        st.metric("Total Barang", len(df))
+        st.metric("Data Training", len(df_train))
         st.markdown("---")
         
-        menu = st.radio("📂 Pilih:", [
+        menu = st.radio("📂 Menu:", [
             "🏠 Dashboard",
-            "📋 Data", 
-            "🤖 Model", 
-            "📊 Matrix",
-            "🔮 Prediksi",
-            "📓 Notebook"
+            "📋 Data Inventaris", 
+            "🤖 Model Evaluasi", 
+            "📊 Confusion Matrix",
+            "🔮 Prediksi Baru"
         ])
     
     # Pages
     if menu == "🏠 Dashboard":
-        st.markdown("### 🏠 **Dashboard**")
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: st.markdown(metric_card(len(df), "Total", "blue"), unsafe_allow_html=True)
-        with c2: st.markdown(metric_card(label_counts.get("LAYAK", 0), "Layak", "green"), unsafe_allow_html=True)
-        with c3: st.markdown(metric_card(label_counts.get("KURANG LAYAK", 0), "Kurang", "yellow"), unsafe_allow_html=True)
-        with c4: st.markdown(metric_card(label_counts.get("TIDAK LAYAK", 0), "Tidak Layak", "red"), unsafe_allow_html=True)
+        st.markdown("### 🏠 **Dashboard Utama**")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            section("Distribusi")
-            fig, ax = plt.subplots(figsize=(8,5))
-            ax.bar(label_counts.index, label_counts.values, color=[COLOR_MAP.get(l, "#ccc") for l in label_counts.index])
-            plt.xticks(rotation=45)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1: st.markdown(metric_card(f"{len(df):,d}", "Total Barang", "blue"), unsafe_allow_html=True)
+        with col2: st.markdown(metric_card(label_counts.get("LAYAK", 0), "Layak ✅", "green"), unsafe_allow_html=True)
+        with col3: st.markdown(metric_card(label_counts.get("KURANG LAYAK", 0), "Kurang ⚠️", "yellow"), unsafe_allow_html=True)
+        with col4: st.markdown(metric_card(label_counts.get("TIDAK LAYAK", 0), "Tidak Layak ❌", "red"), unsafe_allow_html=True)
+        
+        col_left, col_right = st.columns([2, 1])
+        with col_left:
+            section("📊 Distribusi Kondisi")
+            fig, ax = plt.subplots(figsize=(9, 5))
+            colors = [COLOR_MAP.get(l, "#ccc") for l in label_counts.index]
+            bars = ax.bar(label_counts.index, label_counts.values, color=colors, edgecolor='white', linewidth=2)
+            ax.set_title("Distribusi Barang Inventaris", fontweight='bold', fontsize=14)
+            plt.xticks(rotation=45, ha='right')
+            plt.tight_layout()
             st.pyplot(fig)
         
-        with col2:
-            section("Akurasi")
-            st.markdown(metric_card(f"{accuracy_score(y_test, y_pred_gnb)*100:.1f}%", "Gaussian NB", "blue"), unsafe_allow_html=True)
-            st.markdown(metric_card(f"{accuracy_score(y_test, y_pred_bnb)*100:.1f}%", "Bernoulli NB", "blue"), unsafe_allow_html=True)
+        with col_right:
+            section("🎯 Akurasi Model")
+            acc_gnb = accuracy_score(y_test, y_pred_gnb) * 100
+            acc_bnb = accuracy_score(y_test, y_pred_bnb) * 100
+            st.markdown(metric_card(f"{acc_gnb:.1f}%", "Gaussian NB", "blue"), unsafe_allow_html=True)
+            st.markdown(metric_card(f"{acc_bnb:.1f}%", "Bernoulli NB", "blue"), unsafe_allow_html=True)
     
-    elif menu == "📋 Data":
-        st.markdown("### 📋 **Data Inventaris**")
-        filter_label = st.selectbox("Kondisi:", ["Semua"] + sorted(df_train["Label Kondisi"].unique()))
-        search = st.text_input("🔍 Cari:")
+    elif menu == "📋 Data Inventaris":
+        st.markdown("### 📋 **Data Inventaris Lengkap**")
         
-        df_view = df_train.copy()
-        if filter_label != "Semua": 
-            df_view = df_view[df_view["Label Kondisi"] == filter_label]
-        if search: 
-            df_view = df_view[df_view["NAMA_BARANG"].str.contains(search, case=False, na=False)]
-        
-        st.dataframe(df_view, use_container_width=True)
-    
-    elif menu == "🤖 Model":
-        st.markdown("### 🤖 **Evaluasi Model**")
-        acc_gnb = accuracy_score(y_test, y_pred_gnb)
-        st.success(f"**Gaussian NB Accuracy: {acc_gnb*100:.2f}%**")
-        st.dataframe(pd.DataFrame({
-            'Model': ['Gaussian NB', 'Bernoulli NB'],
-            'Accuracy': [acc_gnb*100, accuracy_score(y_test, y_pred_bnb)*100]
-        }))
-    
-    elif menu == "📊 Matrix":
-        st.markdown("### 📊 **Confusion Matrix**")
-        cm = confusion_matrix(y_test, y_pred_gnb)
-        fig, ax = plt.subplots(figsize=(8,6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
-        st.pyplot(fig)
-    
-    elif menu == "🔮 Prediksi":
-        st.markdown("### 🔮 **Prediksi Baru**")
         col1, col2 = st.columns(2)
         with col1:
-            nama = st.text_input("Nama Barang:")
-            tahun = st.slider("Tahun", 2015, 2025, 2023)
-            frek = st.slider("Frekuensi", 1, 5, 3)
-            umur = st.slider("Umur", 0, 10, 2)
-            fisik = st.slider("Fisik", 1, 5, 4)
-            lengkap = st.slider("Kelengkap", 1, 5, 4)
-            
-            if st.button("🔮 Prediksi"):
-                input_data = np.array([[tahun, frek, umur, fisik, lengkap]])
-                pred = gnb.predict(input_data)[0]
-                pred_label = le.inverse_transform([pred])[0]
-                
-                with col2:
-                    st.markdown(f"**Hasil: {badge(pred_label)}**", unsafe_allow_html=True)
+            filter_label = st.selectbox("Filter Kondisi:", ["Semua"] + sorted(df_train["Label Kondisi"].unique().tolist()))
+        with col2:
+            search = st.text_input("🔍 Cari nama barang:", placeholder="Ketik nama barang...")
+        
+        df_view = df_train.copy()
+        if filter_label != "Semua":
+            df_view = df_view[df_view["Label Kondisi"] == filter_label]
+        if search:
+            df_view = df_view[df_view["NAMA_BARANG"].str.contains(search, case=False, na=False)]
+        
+        st.info(f"**Menampilkan {len(df_view):,d} dari {len(df_train):,d} data**")
+        st.dataframe(df_view, use_container_width=True, height=600)
     
-    elif menu == "📓 Notebook":
-        st.markdown("### 📓 **naive-bayes.ipynb**")
-        if notebook:
-            for cell in notebook["cells"][:10]:  # Limit to first 10 cells
-                if cell["cell_type"] == "markdown":
-                    st.markdown("".join(cell["source"]))
-                elif cell["cell_type"] == "code":
-                    st.code("".join(cell["source"]))
-        else:
-            st.info("📓 File notebook tidak ditemukan")
+    elif menu == "🤖 Model Evaluasi":
+        st.markdown("### 🤖 **Evaluasi Model Naive Bayes**")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            section("Gaussian Naive Bayes")
+            acc_g = accuracy_score(y_test, y_pred_gnb)
+            st.metric("Accuracy", f"{acc_g*100:.2f}%")
+        
+        with col2:
+            section("Bernoulli Naive Bayes")
+            acc_b = accuracy_score(y_test, y_pred_bnb)
+            st.metric("Accuracy", f"{acc_b*100:.2f}%")
+    
+    elif menu == "📊 Confusion Matrix":
+        st.markdown("### 📊 **Confusion Matrix**")
+        model_choice = st.selectbox("Pilih Model:", ["Gaussian NB", "Bernoulli NB"])
+        y_pred = y_pred_gnb if model_choice == "Gaussian NB" else y_pred_bnb
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        cm = confusion_matrix(y_test, y_pred)
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
+                   xticklabels=le.classes_, yticklabels=le.classes_)
+        ax.set_title(f"Confusion Matrix - {model_choice}", fontsize=14, fontweight='bold')
+        st.pyplot(fig)
+    
+    elif menu == "🔮 Prediksi Baru":
+        st.markdown("### 🔮 **Prediksi Kondisi Barang Baru**")
+        
+        col_form, col_result = st.columns([1, 1])
+        
+        with col_form:
+            section("📝 Input Data")
+            nama_barang = st.text_input("Nama Barang:", placeholder="Contoh: Laptop Dell")
+            model_pilihan = st.selectbox("Model:", ["Gaussian NB", "Bernoulli NB"])
+            
+            st.markdown("**Fitur Numerik:**")
+            tahun = st.slider("📅 Tahun Pengadaan", 2015, 2025, 2023)
+            frekuensi = st.slider("⏰ Frekuensi Pemakaian (1=Jarang, 5=Sering)", 1, 5, 3)
+            umur = st.slider("📏 Umur Barang (tahun)", 0, 10, 2)
+            kondisi_fisik = st.slider("🔧 Kondisi Fisik (1=Rusak, 5=Baik)", 1, 5, 4)
+            kelengkapan = st.slider("📦 Kelengkapan (1=Tidak lengkap, 5=Lengkap)", 1, 5, 4)
+            
+            if st.button("🔮 **Lakukan Prediksi**", use_container_width=True, type="primary"):
+                # Predict
+                input_data = np.array([[tahun, frekuensi, umur, kondisi_fisik, kelengkapan]])
+                model = gnb if model_pilihan == "Gaussian NB" else bnb
+                prediction = model.predict(input_data)[0]
+                pred_label = le.inverse_transform([prediction])[0]
+                
+                with col_result:
+                    section("📊 Hasil Prediksi")
+                    st.markdown(f"**Barang:** {nama_barang or 'Tidak disebutkan'}")
+                    st.markdown(f"**Prediksi:** {badge(pred_label)}", unsafe_allow_html=True)
+                    
+                    st.success(f"Model: **{model_pilihan}**")
+                    st.info(f"Input: Tahun={tahun}, Frek={frekuensi}, Umur={umur}, Fisik={kondisi_fisik}, Lengkap={kelengkapan}")
 
 except Exception as e:
-    st.error(f"❌ **Error**: {str(e)}")
-    st.stop()
+    st.error(f"❌ **Terjadi Error**: {str(e)}")
+    st.info("Pastikan file CSV ada di folder yang sama dengan app.py")
